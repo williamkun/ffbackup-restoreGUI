@@ -73,6 +73,8 @@ void MainWindow::finishedHandler(int exitCode)
             for(int i = 0; i < 4; i++)
                 listSizeStr[i] = info[i];
             uint32_t prjListSize = *(uint32_t *)listSizeStr;
+            if(prjListSize == 0)
+                return ;
             for(uint32_t i = 0; i < prjListSize; i++)
             {
                 while(info[end] != '\0')
@@ -86,6 +88,7 @@ void MainWindow::finishedHandler(int exitCode)
 
             //2.get detail list
             detailList.clear();
+            detailList.resize(prjListSize);
             IDTIME tmpID;
             for(uint32_t i = 0; i < prjListSize; i++)
             {
@@ -94,15 +97,19 @@ void MainWindow::finishedHandler(int exitCode)
                 uint32_t detailListSize = *(uint32_t *)listSizeStr;
                 for(uint32_t j = 0; j < detailListSize; j++)
                 {
+                    uint32_t idTime;
                     //2.1 backup_id
-                    tmp = info.mid(start, 4);
-                    start += 4;
-                    everyInfo = QString::fromUtf8(tmp);
-                    tmpID.backup_id = everyInfo.toInt();
-                    tmp = info.mid(start, 4);
-                    start += 4;
-                    everyInfo = QString::fromUtf8(tmp);
-                    tmpID.finished_time = everyInfo.toInt();
+                    for(int loop = 0; loop < 4; loop++)
+                        listSizeStr[loop] = info[start++];
+                    idTime = *(uint32_t *)listSizeStr;
+                    tmpID.backup_id = idTime;
+                    qDebug() << tmpID.backup_id;
+                    //2.2 finished_time
+                    for(int loop = 0; loop < 4; loop++)
+                        listSizeStr[loop] = info[start++];
+                    idTime = *(uint32_t*)listSizeStr;
+                    tmpID.finished_time = idTime;
+                    qDebug() << tmpID.finished_time;
                     detailList.at(i).push_back(tmpID);
                 }
             }
