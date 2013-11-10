@@ -46,13 +46,15 @@ void MainWindow::readStandardOutput()
             bufferCopy.push_back(info[i]);
         int cutPos = bufferCopy.size() / 4 * 4;
         char digitStr[4];
+        uint32_t val;
         int loop = cutPos - 1;
         for(int i = 3; i >= 0; i--)
         {
             digitStr[i] = bufferCopy.at(loop--);
         }
         bufferCopy.erase(bufferCopy.begin(), bufferCopy.begin() + cutPos);
-        progressDialog->setValue(*(uint32_t *)(digitStr));
+        memcpy(&val, digitStr, 4);
+        progressDialog->setValue(val);
     }
     else return;
 }
@@ -72,7 +74,8 @@ void MainWindow::finishedHandler(int exitCode)
             prjsList.clear();
             for(int i = 0; i < 4; i++)
                 listSizeStr[i] = info[i];
-            uint32_t prjListSize = *(uint32_t *)listSizeStr;
+            uint32_t prjListSize;
+            memcpy(&prjListSize, listSizeStr, 4);
             if(prjListSize == 0)
                 return ;
             for(uint32_t i = 0; i < prjListSize; i++)
@@ -94,20 +97,21 @@ void MainWindow::finishedHandler(int exitCode)
             {
                 for(int loop = 0; loop < 4; loop++)
                     listSizeStr[loop] = info[start++];
-                uint32_t detailListSize = *(uint32_t *)listSizeStr;
+                uint32_t detailListSize;
+                memcpy(&detailListSize, listSizeStr, 4);
                 for(uint32_t j = 0; j < detailListSize; j++)
                 {
                     uint32_t idTime;
                     //2.1 backup_id
                     for(int loop = 0; loop < 4; loop++)
                         listSizeStr[loop] = info[start++];
-                    idTime = *(uint32_t *)listSizeStr;
+                    memcpy(&idTime, listSizeStr, 4);
                     tmpID.backup_id = idTime;
                     qDebug() << tmpID.backup_id;
                     //2.2 finished_time
                     for(int loop = 0; loop < 4; loop++)
                         listSizeStr[loop] = info[start++];
-                    idTime = *(uint32_t*)listSizeStr;
+                    memcpy(&idTime, listSizeStr, 4);
                     tmpID.finished_time = idTime;
                     qDebug() << tmpID.finished_time;
                     detailList.at(i).push_back(tmpID);
