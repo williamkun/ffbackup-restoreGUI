@@ -42,7 +42,9 @@ private:
     vector<char> bufferCopy;
     QProcess *pro;
     QProgressDialog *progressDialog;
+    bool firstReadStd;
     int detailIndex;
+    int prjIndex;
     int flag;
 };
 

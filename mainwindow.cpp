@@ -22,8 +22,11 @@ MainWindow::~MainWindow()
 
 bool MainWindow::initInteractive(QStringList args)
 {
+    prjIndex = 0;
+    detailIndex = 0;
+    firstReadStd = true;
     pro = new QProcess(this);
-    pro->start(QString("./ffbackup"),args);
+    pro->start(QString("/opt/ffbackup/ffbackup-restore"),args);
     QObject::connect(pro, SIGNAL(readyReadStandardOutput()), this, SLOT(readStandardOutput()));
     QObject::connect(pro, SIGNAL(finished(int)), this, SLOT(finishedHandler(int)));
     QObject::connect(ui->projectsList, SIGNAL(currentTextChanged(QString)), this, SLOT(getSpecifiedPrj(QString)));
@@ -42,11 +45,32 @@ void MainWindow::readStandardOutput()
     {
         QByteArray info = pro->readAllStandardOutput();
         int infoSize = info.size();
-        for(int i = 0; i < infoSize; i++)
-            bufferCopy.push_back(info[i]);
-        int cutPos = bufferCopy.size() / 4 * 4;
         char digitStr[4];
         uint32_t val;
+        for(int i = 0; i < infoSize; i++)
+            bufferCopy.push_back(info[i]);
+        if(firstReadStd)
+        {
+            if(bufferCopy.size() < 4)
+                return;
+            else
+            {
+                for(int i = 0; i < 4; i++)
+                    digitStr[i] = bufferCopy.at(i);
+                bufferCopy.erase(bufferCopy.begin(), bufferCopy.begin() + 4);
+                memcpy(&val, digitStr, 4);
+                progressDialog = new QProgressDialog(this);
+                progressDialog->setLabelText(QString("Restoring now..."));
+                progressDialog->setRange(0,val);
+                progressDialog->setModal(true);
+                progressDialog->setCancelButtonText(QString("Cancel"));
+                progressDialog->exec();
+                firstReadStd = false;
+            }
+        }
+        int cutPos = bufferCopy.size() / 4 * 4;
+        if(cutPos == 0)
+            return ;
         int loop = cutPos - 1;
         for(int i = 3; i >= 0; i--)
         {
@@ -223,25 +247,21 @@ void MainWindow::showDetailList(string prjName)
 void MainWindow::on_restoreButton_clicked()
 {
 
-    QString info = QString("-i restore -n %1 ").arg(ui->projectsList->currentItem()->text());
+    QString info = QString("-i restore -p %1 ").arg(ui->projectsList->currentItem()->text());
     QString tmp = ui->detailList->currentItem()->text();
     detailIndex = ui->detailList->currentRow();
+    prjIndex = ui->projectsList->currentRow();
     tmp.remove(QString("BackupID:"));
     tmp = tmp.section("  ",0,0);
-    info.append(QString("-o %1").arg(tmp));
+    info.append(QString("-r %1").arg(tmp));
 
     //set flag
     flag = 2;
     QStringList argu;
-    argu << "-i" << "restore" << "-n" << ui->projectsList->currentItem()->text() << "-o" << tmp;
-    argu << "-d" << "/home/william/restoreDir";
+    argu << "-i" << "restore" << "-p" << ui->projectsList->currentItem()->text() << "-r" << tmp;
+    argu << "-o" << "/home/william/restoreDir";
     initInteractive(argu);
-    progressDialog = new QProgressDialog(this);
-    progressDialog->setLabelText(QString("Restoring now..."));
-    progressDialog->setRange(0, detailList.at(detailIndex).size());
-    progressDialog->setModal(true);
-    progressDialog->setCancelButtonText(QString("Cancel"));
-    progressDialog->exec();
+
 
     QMessageBox::information(this, "selected info", info);
 }
